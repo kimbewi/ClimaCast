@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ClimaCast GH Dashboard</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css"/>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #f5f0e8; color: #2d2d2d; font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; padding-top: 56px;}
+  .topbar { background: #fff; border-bottom: 1px solid #e8e0d0; padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: fixed; top: 0; left: 0; width: 100%; z-index: 1000;}
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon { width: 34px; height: 34px; background: #1a6b3a; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .logo-name { font-size: 17px; font-weight: 800; color: #1a6b3a; letter-spacing: -0.5px; }
+  .logo-sub { font-size: 11px; color: #8a7e6e; }
+  .main { height: calc(100vh - 56px); }
+  .content { overflow-y: auto; padding: 24px; }
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .page-title { font-size: 20px; font-weight: 800; color: #1a2d1e; }
+  .page-sub { font-size: 12px; color: #8a7e6e; margin-top: 2px; }
+  .week-wrap { display: flex; flex-direction: column; align-items: flex-start; }
+  .week-label { font-size: 10px; color: #b0a898; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; margin-left: 4px; }
+  .week-select {
+    background-color: #fff; border: 1px solid #e8e0d0; border-radius: 12px; padding: 8px 36px 8px 14px; width: 430px; font-size: 13px; color: #1a6b3a; font-weight: 700; cursor: pointer; outline: none; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: all 0.2s ease; appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%231a6b3a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat; background-position: right 14px center;
+  }
+  .week-select:hover { border-color: #b8ddc8; background-color: #e8f5ee; }
+  .stage-info-card { background: #fff; border: 1px solid #e8e0d0; border-left: 4px solid #1a6b3a; border-radius: 0 10px 10px 0; padding: 12px 14px; display: flex; align-items: flex-start; gap: 12px; margin-top: 8px; transition: border-left-color 0.25s ease; }
+  .stage-info-icon { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px; background: #e8f5ee; }
+  .stage-info-name { font-size: 12px; font-weight: 700; color: #1a2d1e; display: flex; align-items: center; gap: 7px; margin-bottom: 3px; }
+  .stage-info-badge { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; padding: 2px 7px; border-radius: 20px; }
+  .stage-info-desc { font-size: 11px; color: #8a7e6e; line-height: 1.55; }
+  .alert-banner { background: #fff8e6; border: 1px solid #f5c842; border-left: 4px solid #f5c842; border-radius: 8px; padding: 10px 14px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+  .alert-banner i { color: #d97706; font-size: 18px; }
+  .alert-text { font-size: 12px; color: #92400e; flex: 1; }
+  .alert-text strong { display: block; font-size: 13px; margin-bottom: 2px; }
+  .cards-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+  .card { background: #fff; border: 1px solid #e8e0d0; border-radius: 12px; padding: 16px; position: relative; }
+  .card-label { font-size: 11px; color: #b0a898; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; display: flex; align-items: center; gap: 6px; }
+  .card-label i { font-size: 14px; }
+  .card-value { font-size: 30px; font-weight: 800; margin: 8px 0 0; letter-spacing: -1px; }
+  .card-unit { font-size: 13px; color: #8a7e6e; font-weight: 400; }
+  .card-thresh { font-size: 11px; color: #b0a898; margin-top: 4px; }
+  .card-status { position: absolute; top: 16px; right: 16px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; padding: 4px 10px; border-radius: 20px; font-weight: 800; }
+  .s-ok  { background-color: #e8f5ee; color: #1a6b3a; }
+  .s-warn { background-color: #fff8e6; color: #d97706; }
+  .s-bad  { background-color: #fef2f2; color: #dc2626; }
+  .cv-temp { color: #e05a2b; } .cv-hum { color: #2563eb; } .cv-co2 { color: #7c3aed; }
+  .mid-row { display: grid; grid-template-columns: 3fr 1fr; gap: 14px; margin-bottom: 20px; min-width: 0; align-items: start; }
+  .section-title { font-size: 13px; font-weight: 700; color: #1a2d1e; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .section-title i { font-size: 15px; color: #1a6b3a; }
+  .chart-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .chart-toolbar .section-title { margin-bottom: 0; }
+  .range-group { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+  .range-btn { padding: 4px 11px; border-radius: 6px; border: 1px solid #e8e0d0; background: #f5f0e8; font-size: 11px; font-weight: 700; cursor: pointer; color: #6e6258; transition: all 0.15s; line-height: 1.4; }
+  .range-btn:hover { border-color: #b8ddc8; color: #1a6b3a; background: #f0faf5; }
+  .range-btn.range-active { background: #1a6b3a; color: #fff; border-color: #1a6b3a; }
+  .custom-range-row { display: none; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .custom-range-row.visible { display: flex; }
+  .custom-range-row input[type="datetime-local"] { border: 1px solid #e8e0d0; border-radius: 6px; padding: 4px 8px; font-size: 11px; color: #2d2d2d; background: #fff; outline: none; font-family: inherit; }
+  .custom-range-row input[type="datetime-local"]:focus { border-color: #1a6b3a; }
+  .custom-sep { font-size: 11px; color: #b0a898; }
+  .refresh-btn { padding: 4px 10px; border-radius: 6px; border: 1px solid #e8e0d0; background: #fff; font-size: 11px; font-weight: 700; cursor: pointer; color: #1a6b3a; display: flex; align-items: center; gap: 4px; transition: all 0.15s; }
+  .refresh-btn:hover { background: #e8f5ee; border-color: #b8ddc8; }
+  .refresh-btn i { font-size: 13px; }
+  .chart-wrap { position: relative; flex: 1; min-height: 180px; }
+  .chart-wrap canvas { width: 100% !important; height: 100% !important; }
+  .chart-empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+  .chart-empty.visible { opacity: 1; }
+  .chart-empty i { font-size: 28px; color: #d1cfc8; margin-bottom: 6px; }
+  .chart-empty span { font-size: 12px; color: #b0a898; }
+  .actuator-list { display: flex; flex-direction: column; gap: 10px; }
+  .actuator { background: #f5f0e8; border: 1px solid #e8e0d0; border-radius: 8px; padding: 12px; }
+  .actuator-active { background: #e8f5ee; border-color: #b8ddc8; }
+  .act-row { display: flex; align-items: center; justify-content: space-between; }
+  .act-info { display: flex; align-items: center; gap: 12px; }
+  .act-icon { font-size: 20px; color: #1a6b3a; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: #fff; border-radius: 8px; border: 1px solid #e8e0d0; }
+  .act-name { font-size: 12px; font-weight: 600; color: #2d2d2d; }
+  .act-sub { font-size: 11px; color: #8a7e6e; margin-top: 2px; }
+  .toggle { display: flex; align-items: center; }
+  .toggle-pill { width: 36px; height: 20px; border-radius: 10px; display: flex; align-items: center; padding: 2px; cursor: pointer; transition: background 0.2s; }
+  .toggle-on { background: #1a6b3a; } .toggle-off { background: #d1cfc8; }
+  .toggle-thumb { width: 16px; height: 16px; border-radius: 50%; background: white; transition: transform 0.2s; }
+  .toggle-on .toggle-thumb { transform: translateX(16px); }
+  .mini-badge { font-size: 9px; margin-left: 8px; padding: 2px 6px; border-radius: 4px; cursor: pointer; border: 1px solid transparent; font-weight: 700; display: inline-flex; align-items: center; gap: 3px; vertical-align: middle; transition: all 0.2s; }
+  .mb-auto { background: #e8f5ee; color: #1a6b3a; border-color: #b8ddc8; }
+  .mb-man  { background: #fff8e6; color: #d97706; border-color: #f5c842; }
+  .offline-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(253,248,240,0.7); backdrop-filter: blur(3px); z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 1; pointer-events: auto; transition: opacity 0.3s; border-radius: 12px; }
+  .offline-overlay:not(.active) { opacity: 0; pointer-events: none; }
+  @media (max-width: 1100px) { .mid-row { grid-template-columns: 1fr; } }
+  @media (max-width: 768px) { .cards-row { grid-template-columns: 1fr; } .page-header { flex-direction: column; align-items: flex-start; gap: 16px; } .alert-banner { align-items: flex-start; } .alert-banner i { margin-top: 2px; } .chart-toolbar { flex-direction: column; align-items: flex-start; } }
+
+  /* Navigation Tabs */
+  .topbar-left { display: flex; align-items: center; }
+  .nav-tabs { display: flex; gap: 24px; align-items: center; margin-left: 40px; height: 56px; }
+  .nav-item { text-decoration: none; font-size: 14px; font-weight: 700; color: #8a7e6e; padding: 18px 0; border-bottom: 3px solid transparent; transition: all 0.2s; display: flex; align-items: center; height: 100%; }
+  .nav-item:hover { color: #1a6b3a; }
+  .nav-item.active { color: #1a6b3a; border-bottom-color: #1a6b3a; }
+
+  /* About Us & ID Card Styles */
+  .team-section { margin-bottom: 40px; }
+ .team-title { font-size: 20px; font-weight: 800; color: #1a6b3a; border-bottom: 2px solid #e8f5ee; padding-bottom: 10px; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .team-title i { font-size: 20px; }
+  /* Switched to Flexbox for perfect row centering & limited max width */
+  /* Revised Premium Card Design */
+  .id-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 32px; max-width: 1100px; margin: 0 auto; }
+  
+  .id-card { width: 340px; background: #fff; border: 1px solid #f0ebe1; border-radius: 24px; padding: 40px 24px 24px; text-align: center; display: flex; flex-direction: column; align-items: center; box-shadow: 0 12px 36px rgba(26,45,30,0.03); transition: all 0.3s ease; position: relative; overflow: hidden; }
+  
+  /* Green top accent line & Hover effects */
+  .id-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px; background: #1a6b3a; transition: height 0.3s ease; }
+  .id-card:hover { transform: translateY(-6px); box-shadow: 0 20px 40px rgba(26,107,58,0.08); border-color: #e8f5ee; }
+  .id-card:hover::before { height: 10px; }
+  
+  /* Upgraded Photo frame */
+  .id-photo { width: 120px; height: 120px; border-radius: 50%; background: #fdfcf9; padding: 4px; border: 2px solid #e8f5ee; margin-bottom: 20px; object-fit: cover; transition: all 0.3s ease; }
+  .id-card:hover .id-photo { border-color: #1a6b3a; background: #e8f5ee; transform: scale(1.05); }
+  
+  /* Typography */
+  .id-name { font-size: 22px; font-weight: 800; color: #1a2d1e; margin-bottom: 6px; letter-spacing: -0.5px; }
+  .id-role { font-size: 11px; font-weight: 800; color: #1a6b3a; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 16px; background: #e8f5ee; padding: 6px 14px; border-radius: 20px; }
+  
+  /* NEW: Role Description Text */
+  .id-desc { font-size: 13px; color: #6e6258; line-height: 1.6; margin-bottom: 24px; padding: 0 10px; font-weight: 500; }
+  
+  /* Contact Badge (Pushed to bottom using margin-top: auto) */
+  .id-contact-wrap { width: 100%; background: #f9f8f6; border-radius: 16px; padding: 16px; border: 1px solid #f0ebe1; margin-top: auto; }
+  .id-contact { font-size: 13px; font-weight: 600; color: #5a665e; display: flex; align-items: center; gap: 8px; justify-content: center; }
+  .id-contact i { color: #1a6b3a; font-size: 16px; }
+  
+  /* Premium SaaS-Style About Header */
+.about-header-wrapper { text-align: center; padding: 0px 20px 50px; margin-bottom: 20px; }  .about-badge { display: inline-block; background: #e8f5ee; color: #1a6b3a; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; padding: 6px 16px; border-radius: 50px; margin-bottom: 20px; border: 1px solid #b8ddc8; }
+  .about-hero-title { font-size: 46px; font-weight: 900; color: #1a2d1e; letter-spacing: -1.5px; line-height: 1.1; margin-bottom: 16px; }
+  .about-hero-sub { font-size: 16px; color: #8a7e6e; max-width: 500px; margin: 0 auto 30px; line-height: 1.5; }
+  .about-divider { width: 60px; height: 5px; background: #1a6b3a; margin: 0 auto; border-radius: 4px; }
+
+</style>
+</head>
+<body>
+
+<div class="topbar">
+<div class="topbar-left">
+  <div class="logo">
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAoCAYAAACM/rhtAAAAtGVYSWZJSSoACAAAAAYAEgEDAAEAAAABAAAAGgEFAAEAAABWAAAAGwEFAAEAAABeAAAAKAEDAAEAAAACAAAAEwIDAAEAAAABAAAAaYcEAAEAAABmAAAAAAAAAGAAAAABAAAAYAAAAAEAAAAGAACQBwAEAAAAMDIxMAGRBwAEAAAAAQIDAACgBwAEAAAAMDEwMAGgAwABAAAA//8AAAKgBAABAAAAKAAAAAOgBAABAAAAKAAAAAAAAABNP10PAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAFWmlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSfvu78nIGlkPSdXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQnPz4KPHg6eG1wbWV0YSB4bWxuczp4PSdhZG9iZTpuczptZXRhLyc+CjxyZGY6UkRGIHhtbG5zOnJkZj0naHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyc+CgogPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9JycKICB4bWxuczpBdHRyaWI9J2h0dHA6Ly9ucy5hdHRyaWJ1dGlvbi5jb20vYWRzLzEuMC8nPgogIDxBdHRyaWI6QWRzPgogICA8cmRmOlNlcT4KICAgIDxyZGY6bGkgcmRmOnBhcnNlVHlwZT0nUmVzb3VyY2UnPgogICAgIDxBdHRyaWI6Q3JlYXRlZD4yMDI2LTA1LTI3PC9BdHRyaWI6Q3JlYXRlZD4KICAgICA8QXR0cmliOkRhdGE+eyZxdW90O2RvYyZxdW90OzomcXVvdDtEQUhLM2ZzbUNDTSZxdW90OywmcXVvdDt1c2VyJnF1b3Q7OiZxdW90O1VBRkpHQm9DTFhrJnF1b3Q7LCZxdW90O2JyYW5kJnF1b3Q7OiZxdW90O0FsZXhhbmRyYSBHYXJjaWEmIzM5O3MgQ2xhc3MmcXVvdDt9PC9BdHRyaWI6RGF0YT4KICAgICA8QXR0cmliOkV4dElkPjg5MzMzNmNlLWJmOGYtNDEzYi05NDM5LTNhN2QzM2UwZjVlYjwvQXR0cmliOkV4dElkPgogICAgIDxBdHRyaWI6RmJJZD41MjUyNjU5MTQxNzk1ODA8L0F0dHJpYjpGYklkPgogICAgIDxBdHRyaWI6VG91Y2hUeXBlPjI8L0F0dHJpYjpUb3VjaFR5cGU+CiAgICA8L3JkZjpsaT4KICAgPC9yZGY6U2VxPgogIDwvQXR0cmliOkFkcz4KIDwvcmRmOkRlc2NyaXB0aW9uPgoKIDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PScnCiAgeG1sbnM6ZGM9J2h0dHA6Ly9wdXJsLm9yZy9kYy9lbGVtZW50cy8xLjEvJz4KICA8ZGM6dGl0bGU+CiAgIDxyZGY6QWx0PgogICAgPHJkZjpsaSB4bWw6bGFuZz0neC1kZWZhdWx0Jz5Mb2dvIC0gMTwvcmRmOmxpPgogICA8L3JkZjpBbHQ+CiAgPC9kYzp0aXRsZT4KIDwvcmRmOkRlc2NyaXB0aW9uPgoKIDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PScnCiAgeG1sbnM6cGRmPSdodHRwOi8vbnMuYWRvYmUuY29tL3BkZi8xLjMvJz4KICA8cGRmOkF1dGhvcj5FbGxhIEx1bWF3YWc8L3BkZjpBdXRob3I+CiA8L3JkZjpEZXNjcmlwdGlvbj4KCiA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0nJwogIHhtbG5zOnhtcD0naHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyc+CiAgPHhtcDpDcmVhdG9yVG9vbD5DYW52YSBkb2M9REFISzNmc21DQ00gdXNlcj1VQUZKR0JvQ0xYayBicmFuZD1BbGV4YW5kcmEgR2FyY2lhJiMzOTtzIENsYXNzPC94bXA6Q3JlYXRvclRvb2w+CiA8L3JkZjpEZXNjcmlwdGlvbj4KPC9yZGY6UkRGPgo8L3g6eG1wbWV0YT4KPD94cGFja2V0IGVuZD0ncic/PoR2l30AAA81SURBVFiFrVhpVJtnds4y0560P/qj7b/5007OaZJpe3Kaycxpm9qZmZ4kHidxJrYz8Uy8TOLYYbFBtjEY2whjDLZB7IvYzGJsE5kdCW2gBQFCG6AVSSCQxCL2xXhH4un9PhaTZZpl8p7znHe99z7ffe973+/7nnrqOxQATwOCZ5n6y3NKpfJHAr/gOUG34Dmm/XWygj8j+xcXRikX3Ge29J8R2oQvC+3NMSKHqEroELYL7S0WkV3oFzmEfqYtHBC2s3N2YYzQ1vDyl+V/MKLryljlre7Wf5Q4WqPFA606qUsa7BzXoGtCA7VPBaVXiXZPGwvliAJqv4rmOsGskbokQYlT3CMeEEfJHfV//2W937sIBIJnmdoI44/bB6Vn5C75nDbQjc5RzWr7YBvkbvmK3C1bkbtkoTaXPET16hqYNoHmaTzYRmsZGUaW5mdkLtkp7noYbNj47uSwJtjubv+pYqi92zClh8bbsaocVASVQ0qCAmtQfkO9iaBisD2o8WlW9VM6kF6N2qv+p622vnUh17MCCpdiZ6evc8Y4ZYTaow52eDpCmuEOdBA26m+LLetDhBXjtJEeWDOjGlLt+E4kN1xOhD4xTBhCunEdKdeEunxd6PJ+Fd3ebnT71uHdUq+3v06GQedIZ1A/rod+Qh9SD6oPb7X9jduqdqt3mwKmVf2YfrXH1xPSjeqg8+vQ4+/ZrPV+Uj5qgNbPkOiE1qdFD4ExrvVriaAWmpEuGDZln8hvgGRChjHDam+gd7V7qPt3/68nN06Uzqf7mXnaMtc/1Q+D3xAyjZtgHDPCQOgd74NprJetdaMa1Np5EA+WQz5cD4GjGhX9VbhlFyFLX48CkxilZhVK++QkQ7ITJvRPMLImVpdxHYZRQ4ixZZ42z2pHtC9u5bK1bOYk86RZ6b7jJkW9wf5AP/om+tAfsMA8aaMtU0A4UEq1Cq2uUujHWyAbrIR/eQjee17UOYSUVvqhDbhR3KuCb3kJ5TYjynplqLGrkG8ksuO9sE+ZiWwfq7sv0Mfaci+7yYZZ8ee8x7rVPms/PvLAC3PAErRMWWGZtMI6Zacn1kIx2AD1sAjqESFumzPhmDVg8t4ERPYKOqGNcM4PQ+bpRPOACuN3pzEwO47bNj1cC9Mo7tMiS9uKFrcWN61qNDi6yKNmVv+aDStrc/jeMKwzjvAvbPVGRjd6jH/nmncPDy4OwTZlX7VPO+CYHsDAjBOCPj5kzjq45jyoN5fDMtWNqfsBiGw3MX1/GiJHAwq7CmAcN+Bzyw1c0QjQ6DAgRdmCc+1NKDJ04uO660S+B+YpNxLaGnHLooFnwU22HLDPDLA2GdvuxcFhhssmt4170z3vDht/PAHnjCvomnOBweD8EOUrCQWzhvrDqDPfQIdHirlHS0SuDh6at046UNNbA6lThs/NWbiqiUOZsRGpinp4FqdQZuoEv6cD6rERxLc2odneA9uMB1V9lHq8fURyCM5Zxp6bbDuDE8TBPef+jOH0hTvdu+xTTTwOYHBuKDREQt4lL3sg6CaAc86HFksLhNZmDC/5Udd3G8PkzanlGVTpqykE9OTpfhTp4nCkPoriygKx04ASvRLOhUkU93QRIR0kHhcShM10A/VBP+ZEpV5FTvAQSQ+GCIztiUcBeO/6lF+IQd+y72e+O/5H3jt+jCyOrI4QOaatcKpp2+zo9JqQKEylrW5CcXcFCjTFuGGqRbaygILdBtu0iU51GxLkJ3CqOYO2y0Zh0IXcjnpwJUJkdKiwv6oaSRIZwm7cBkfwOW31MBqtOnSMmDF2dxTDi14Gq747PhCXh8NLY//yxHuL/sgFLMF/ZzToXx7D6N1x8qAP7c5OMjSMNncXai1SUjSJcm0tWulE3jQ20Ja2QjUiQpunBkPzdhRpr0NgbkRl7xWck0XhZm8rSvU9MEyOIlkiQbFeR2uHwCOi3X4nlB4b5E4Tph9OEqlRMLYZDvNYpP5Y2CbB8ftThffxkE7fxMr43QCmHkxTKhhEebcI1mk/WqydELu0MPhsuNhSTAdGi4nlabTQabxtu4HI5n0o7ElFh6sHafIs/C9/PxLlueQdO6739WLo7jxylGqUddJplimRISaCXhda7GZkt8kwcS/AYpzB3cDKfTxAgDhtEpy8Py25i3ugOkjA/OM5Cv5BZMnrKaBHIbRpcamlCmq3ETWmdspfTowuBdBEJ9Ex7aEDUYh9VSeQLa9EqqQKZToRLBOD5PlefN7bhfFHd3BTb0BCbSMqdEakCWXQ+YZQa+5FYn0jZYRp1ilMzXBY5yJZTzOCZ2cfzpnuEeuZh3Oh2UfzRHCBzWVSuxH902OQDhjpyRvgW5rGLdqmQh3FobYCV2RlKNYWo8EsJa8acPxWHh0kuuZGjMjvzsbpphhktgko3iaQTaQUbjfUox5crhfSLTJMLw6DaCcvLq/ewfSDOTC2GQ4Ml9kHcyaG21Nut/uv5x8vuh/gERYeL4UWVpbAYCm4DJnNhC7/MHnKBF5rC7iNxUiXViK9rQrJqsuIb8rG4do/IUF6EjeM9ahQy8FX1uNc8xlE1h3GoepoFMrakNokBbeqFhkqOa52ExokdBt5IbGYofO4ic59csoSFlfusBxYLiuLdsqDP2aS4V/NPFhwLbMeXAjNPlxkatwJ3YXB60abw4rGPgNy5W34rDoZn9QcRExdPEp76sBXiPA6Lxy7Sw/jD/wo5Le0IKI4C69d+gSvZ4fjQE4G6roMELkHEHNdgF1luTgtqsPJ4hpoRzyoUKgxcXcWc0Rulmyyth8shJZZDy44bcSNvZh9SwHj1KNFeBcCId/SJJ3gSfgJLoq/CpUSxRIpztwQIKFOgNfSOHgj8whO3MxDtkiC9KY6vJdxCS9zTuMILxcfJKbjQ14GkutrUK5QoKxNgxpPH3Zl5mF/UQU+zq/E8ZwKlNBJllv7KdZmKbUF4FucZOFdDISmHi9iZD5g2nz9sk16Rb57s7BPeoOOKS+oT2ljDHV6ujs7O1BARKLLKebEtfjsWiHeSDqPdy5cRGpDHYSuRlw33UJznwK7z/Iovm7jpq0dHHE5LokFyKLYu6CR4L3UXPyWmwlOdR3iymtRo+mgBD1OtkbgmPKBscuA4eAlLg7itHmKTaODBS7ymMHnWiGAhd+FnpEBaIcdyBfJsb/wHDiN0diTcR7xlIzfTTuL/RlZSGrLx2t5nyKuNQ9Hr2bj08ICvHQhEf+anIjEphq8dZGHXyen4/XTaXgjKx+v5+bg3XM8yPqN6BkeYO3ofU5s2vU5V1x3Jumtx1OwSVDtNEcYJjxQucxBldtMN0g/Jek+qNz9yG2R4FNeGQ6m5+JoAW3h5Uz8/ioPey6l4cPkHBzNK8We1Gy8e+EqDqTm4YOkHOw8l4F9Kbk4zCvEe0Tm/fM87CXvvX8hE7u4GdgTz8PhlDzUdCjQOWyl9GVnbTG2VS5LkOXiNodvEpS5TC+KrYZHBLRadPRhZIF6yEZvx04kf16GQkkdclvrcL1DDo3HAfUgo9CCDlrTPmCGlOQ6Bm1Quq0EC6T0miWzMuN0U9it1O+FjGq5zUqZoRcSyg5iC7POCjH163pFNGaG2GpabSVZsc3wUDxgfnLVMaW+t1vZTC+Xtw2a0HF+Gn6XyMHJsiy8FXMEx/IuI4qfjjxxPeIq8rAn6QTiKvOx5+IpnKI1t7RKHM1Jxh+vxiP2Wg7qTT3gd+TSrcJBjuIiqroFyGxPQEbbGVRqBajWtiBLkYiMdsoGnWW4IP4j5dQIVHc3hYT2PtT1dz15Wdj4Pi1Riw8LaWsPpSUGXzn6e8Rf5yO19jrePncM0QXptKWxtM1c/GfkR4jIv4J/2PVfCKP6P2gt92YJPuYlYUdMJF7Y/z7ibyXhgnQ/MmX5yGsrQZGyBqmtMUhoPgSu8AAuiiJxpmEXrkriUaisoLz5B/Ckl1GqbgkK+npQ0Sk7/ITb+gvr20eO/M1NQ6fj3cQTeP3k4VCxWopitQS/OvUpxVocxQ4Hb8aFURydQKlKhp9+8AZKaM2754/jvyMP4hfR+/AR72P828fv4XBBGC7JwlHQLiS0Iqk1HGcbPwK3ORoxTW8iXVyAJOExnBd/hIuSKEr4+5ApLwmVUAgVKMV2nkDw3Po1t/YpspFvMqVNh9IkDdh26kjw1WMH8A6RDefz8NaZCOy7koBDmck4mJGEqy21eDMmDFeFtdjPS8S+1AQcLTkPnoyPndxoxFbzkSiKwlnyVpIomshcJIKfkPeiwG05jRTRFXBFETjb8ikuCq/QaU9BbNOHQV5bBb3pyA9s5bTlu2TtwympsaotTXoL5wVFK+dqynCyvBCx14spUZdSuwCnKgpxguo46kdfy2fHYqtLcLKiCJxSPs3zqV+GM9XXwSnLx/GSHJyuvIbTVUWIKs5BTHkpOx5TyaexYsTfqETi7fKVVOENJNZWtrNctnzEPYlF7trfJ05JyvMxt4pG4wRl4FQVhY4WZiCCjBwnpWFFWWw7nAxFlOay/bDi7HUw49n4jJ+FyLI8HLvGrM9Z65fmIbIkj20fo7mwomy6EnNwjMajygtCjK3YmpJRTgnv+a1cvlL2Cvaybj1Syt8WWVVyL7KyCBEV/FBEOR8R5MlI8k5k+Ro2+1+DiK+Z3+hH0A5ErI+FXysMRZIXj1WVLB/h521b4/ANfxc2FhzMT3/vUFH2/UP0pAfyeMGDBZk4WJCBA4SD3xMHttSMzj+RbtJ/f39B+tvfitxG2c7lsqln15VLv9mTdXnmQ1K4OyMluCcjNUTAnszvj92ZqSFGF6NzL+nelX7pN1ttfuuy8TTvpHCff/NSguYdXgp2piWv7kjhBnekssCO1ET89huw4wlYuZ1pF1ffzkjBjpSEjp2p3H/+Tp77cuGu/yNhYnN7Ytz+/0mIdf+aiP3q0vnV7YlnsI0bF9yWGLtCcyGqQ9u5cavbubGr26i/PSGWGVvZlsDMn2FlGFlGB6PrqXWPcf/Sv6zMido4Vf9+8uTf/vxMdMTP46KMr8Rxgr/gxoLF+Ri8eu4UXj17Eq/GE87FsGO/5MYRYvFKLCdIMjpGltHxZb0/RHl67172hD+9zvqZl06Fv/ziiYhTL3HCql7ghLe/EBVmeSH6M/8aqM2McSKqXuSEx7wUFf7yU0/IfFHXD1ooma+noq8q3779Rz/hcJ77CWfvc0z7q7J4mo01fDdi/wdDQ6J3hee7owAAAABJRU5ErkJggg==" style="width:34px; height:34px; border-radius:10px; object-fit:cover;">
+    <div><div class="logo-name">ClimaCast</div><div class="logo-sub">Greenhouse Climate Control</div></div>
+  </div>
+</div>
+<nav class="nav-tabs">
+  <a href="#dashboard" class="nav-item active" id="tab-dashboard">Dashboard</a>
+  <a href="#about" class="nav-item" id="tab-about">About Us</a>
+</nav>
+  </div>
+</div>
+
+<div class="main"><div class="content">
+<div id="view-dashboard">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Greenhouse Dashboard</div>
+      <div class="page-sub">Greenhouse Unit &mdash; Lettuce Crop</div>
+    </div>
+    <div class="week-wrap">
+      <div class="week-label">Current Week</div>
+      <select class="week-select" id="lettuce-week" onchange="updateStageCard(this.value)">
+        <option value="1">Week 1</option><option value="2">Week 2</option>
+        <option value="3">Week 3</option><option value="4">Week 4</option>
+        <option value="5">Week 5</option><option value="6">Week 6</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="display:flex; gap:14px; margin-bottom:20px; align-items:stretch;">
+    <div class="alert-banner" id="sys-alert" style="background:#f5f0e8; border-color:#e8e0d0; border-left-color:#b0a898; transition:all 0.3s; margin-bottom:0; flex:1;">
+      <i class="ti ti-antenna" id="alert-icon" style="color:#8a7e6e;"></i>
+      <div class="alert-text" id="alert-text" style="color:#6e6258; transition:all 0.3s;">
+        <strong>System Initializing...</strong>Awaiting first sensor transmission.
+      </div>
+    </div>
+    <div class="stage-info-card" id="stage-info-card" style="margin-top:0; flex:0.4; justify-content:flex-end;">
+      <div class="stage-info-icon" id="stage-info-icon"></div>
+      <div style="flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center;">
+        <div class="stage-info-name"><span id="stage-info-name"></span><span class="stage-info-badge" id="stage-info-badge"></span></div>
+        <div class="stage-info-desc" id="stage-info-desc"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cards-row">
+    <div class="card">
+      <div class="card-label"><i class="ti ti-thermometer"></i> Temperature</div>
+      <div class="card-value cv-temp"><span id="val-temp">--</span><span class="card-unit"> &deg;C</span></div>
+      <div class="card-thresh" id="thresh-temp">Threshold: --</div>
+      <div class="card-status" id="status-temp">--</div>
+    </div>
+    <div class="card">
+      <div class="card-label"><i class="ti ti-droplet"></i> Humidity</div>
+      <div class="card-value cv-hum"><span id="val-hum">--</span><span class="card-unit"> %</span></div>
+      <div class="card-thresh" id="thresh-hum">Threshold: --</div>
+      <div class="card-status" id="status-hum">--</div>
+    </div>
+    <div class="card">
+      <div class="card-label"><i class="ti ti-cloud"></i> CO&#8322; Level</div>
+      <div class="card-value cv-co2"><span id="val-co2">--</span><span class="card-unit"> ppm</span></div>
+      <div class="card-thresh" id="thresh-co2">Threshold: --</div>
+      <div class="card-status" id="status-co2">--</div>
+    </div>
+  </div>
+
+  <div class="mid-row">
+    <div class="card" style="display:flex; flex-direction:column; height:355px;">
+      <div class="chart-toolbar">
+        <div class="section-title"><i class="ti ti-chart-line"></i> Climate Trends</div>
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+          <div class="range-group">
+            <button class="range-btn range-active" id="btn-1H"     onclick="setRange('1H')">1H</button>
+            <button class="range-btn"              id="btn-6H"     onclick="setRange('6H')">6H</button>
+            <button class="range-btn"              id="btn-24H"    onclick="setRange('24H')">24H</button>
+            <button class="range-btn"              id="btn-CUSTOM" onclick="setRange('CUSTOM')">Custom</button>
+            <button class="refresh-btn" onclick="forceRefresh()" title="Refresh chart">
+              <i class="ti ti-refresh" id="refresh-icon"></i> Refresh
+            </button>
+          </div>
+          <div class="custom-range-row" id="custom-range-row">
+            <input type="datetime-local" id="custom-from" onchange="applyCustomRange()">
+            <span class="custom-sep">&rarr;</span>
+            <input type="datetime-local" id="custom-to" onchange="applyCustomRange()">
+          </div>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="climateChart"></canvas>
+        <div class="chart-empty" id="chart-empty">
+          <i class="ti ti-chart-line-off"></i>
+          <span>No data for selected time range</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="overflow:hidden; height:355px; display:flex; flex-direction:column;">
+      <div class="offline-overlay active" id="act-offline">
+        <i class="ti ti-wifi-off" style="font-size:32px; color:#dc2626; margin-bottom:8px;"></i>
+        <div style="font-size:14px; font-weight:800; color:#991b1b; letter-spacing:1px;">CONTROLS OFFLINE</div>
+        <div style="font-size:11px; color:#dc2626;">Awaiting connection...</div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; width:100%;">
+        <div style="font-size:13px; font-weight:700; color:#1a2d1e; display:flex; align-items:center; gap:8px;">
+          <i class="ti ti-settings" style="color:#1a6b3a; font-size:15px;"></i> Actuator Control
+        </div>
+        <div id="mode-badge" style="display:flex; align-items:center; gap:8px; font-size:10px; color:#1a6b3a; font-weight:800; background:#e8f5ee; padding:4px 10px; border-radius:20px; letter-spacing:0.5px; transition:all 0.3s;">
+          <span id="mode-text">AUTOMATIC</span>
+          <div id="t-mode" class="toggle-pill toggle-off" onclick="toggleMode()"><div class="toggle-thumb"></div></div>
+        </div>
+      </div>
+      <div class="actuator-list" id="manual-controls" style="display:flex; flex-direction:column; justify-content:space-between; flex:1; min-height:0;">
+        <div class="actuator" id="card-fan"><div class="act-row">
+          <div class="act-info"><i class="ti ti-propeller act-icon"></i><div>
+            <div class="act-name">Exhaust Fan <span id="mode-fan" class="mini-badge mb-auto" onclick="toggleLocalMode('fan')"><i class="ti ti-switch-horizontal"></i> AUTO</span></div>
+            <div class="act-sub" id="sub-fan">Inactive</div>
+          </div></div>
+          <div class="toggle" id="ctrl-fan" style="opacity:0.5; pointer-events:none; transition:opacity 0.3s;">
+            <div id="t-fan" class="toggle-pill toggle-off" onclick="toggleDevice('fan','t-fan',1,0)"><div class="toggle-thumb"></div></div>
+          </div>
+        </div></div>
+        <div class="actuator" id="card-servo"><div class="act-row">
+          <div class="act-info"><i class="ti ti-window act-icon"></i><div>
+            <div class="act-name">Roof Vent (Servo) <span id="mode-servo" class="mini-badge mb-auto" onclick="toggleLocalMode('servo')"><i class="ti ti-switch-horizontal"></i> AUTO</span></div>
+            <div class="act-sub" id="servo-label">Position: 0&deg;</div>
+          </div></div>
+          <div id="ctrl-servo" style="display:flex; align-items:center; opacity:0.5; pointer-events:none; transition:opacity 0.3s;">
+            <input type="range" id="servo-slider" min="0" max="90" value="0"
+                   oninput="document.getElementById('servo-label').innerText='Position: '+this.value+'\u00b0'"
+                   onchange="updateServo(this.value)"
+                   style="accent-color:#1a6b3a; cursor:pointer; width:112px;">
+          </div>
+        </div></div>
+        <div class="actuator" id="card-lights">
+          <div class="act-row" style="align-items:flex-start;">
+            <!-- Left: icon + label -->
+            <div class="act-info">
+              <i class="ti ti-bulb act-icon" id="light-icon" style="color:#b0a898;"></i>
+              <div>
+                <div class="act-name">Grow Lights <span id="mode-lights" class="mini-badge mb-auto" onclick="toggleLocalMode('lights')"><i class="ti ti-switch-horizontal"></i> AUTO</span></div>
+                <div class="act-sub" id="light-label">OFF</div>
+              </div>
+            </div>
+            <!-- Right: toggle on top, dot strip + slider stacked below when ON -->
+            <div id="ctrl-lights" style="display:flex; flex-direction:column; align-items:flex-end; gap:12px; opacity:0.5; pointer-events:none; transition:opacity 0.3s;">
+              <div id="t-lights" class="toggle-pill toggle-off" onclick="toggleLights()"><div class="toggle-thumb"></div></div>
+              <div id="light-slider-wrap" style="display:none; flex-direction:column; align-items:flex-end; gap:6px;">
+                <div id="light-dots" style="display:flex; width:112px; justify-content:space-between;"></div>
+                <input type="range" id="light-slider" min="0" max="8" step="1" value="0"
+                       oninput="updateLightSliderUI(this.value)"
+                       onchange="updateLights(this.value)"
+                       style="accent-color:#1a6b3a; cursor:pointer; width:112px;">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+  </div>
+
+  <div id="view-about" style="display: none; padding-bottom: 20px;">
+    
+    <div class="about-header-wrapper">
+      <div class="about-badge">Our Team</div>
+      <div class="about-hero-title">Meet the Team</div>
+      <div class="about-hero-sub">The minds behind ClimaCast. <br>We are Group 3, a team of 4th-year Computer Engineering students developing this project for our CMPE 409 Embedded Systems class.</div>
+      <div class="about-divider"></div>
+    </div>
+
+    <div class="team-section">
+      <div class="team-title"><i class="ti ti-users-group"></i> Head Facilitator</div>
+      <div class="id-grid">
+        <div class="id-card">
+          <img src="https://github.com/kimbewi/climacast_images/blob/main/Malto.png?raw=true" class="id-photo" alt="Profile">
+          <div class="id-name">Timothy Matthew C. Malto</div>
+          <div class="id-role">Head Facilitator</div>
+          <div class="id-desc">Oversees project milestones, ensures system requirements meet course objectives, and coordinates overall team progress.</div>
+          <div class="id-contact-wrap">
+          <div class="id-contact"><i class="ti ti-mail"></i> timothymatthewmalto@gmail.com</div>
+        </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="team-section">
+      <div class="team-title"><i class="ti ti-cpu"></i> Hardware & Design</div>
+      <div class="id-grid">
+        <div class="id-card">
+          <img src="https://github.com/kimbewi/climacast_images/blob/main/TIzon.png?raw=true" class="id-photo" alt="Profile">
+          <div class="id-name">Raphael G. Tizon</div>
+          <div class="id-role">Hardware Lead</div>
+          <div class="id-desc">Leads the physical integration of microcontrollers, IoT sensors, and environmental actuators within the greenhouse structure.</div>
+          <div class="id-contact-wrap">
+          <div class="id-contact"><i class="ti ti-mail"></i> rgtizon0@gmail.com</div>
+        </div>
+        </div>
+        <div class="id-card">
+          <img src="https://github.com/kimbewi/climacast_images/blob/main/Ablay.png?raw=true" class="id-photo" alt="Profile">
+          <div class="id-name">John Carlo R. Ablay</div>
+          <div class="id-role">Design Lead</div>
+          <div class="id-desc">Responsible for structural design, 3D prototyping, and ensuring optimal component placement for accurate climate readings.</div>
+          <div class="id-contact-wrap">
+          <div class="id-contact"><i class="ti ti-mail"></i> ablayjc7@gmail.com</div>
+        </div></div>
+        <div class="id-card">
+          <img src="https://github.com/kimbewi/climacast_images/blob/main/GrEGoRiO.jpg?raw=true" class="id-photo" alt="Profile">
+          <div class="id-name">Michael Johan A. Gregorio</div>
+          <div class="id-role">Hardware Team</div>
+          <div class="id-desc">Assists in circuit wiring, power management calibration, and stress-testing the physical sensor modules.</div>
+          <div class="id-contact-wrap">
+          <div class="id-contact"><i class="ti ti-mail"></i> gregoriomichaeljohan@gmail.com</div>
+        </div></div>
+        <div class="id-card">
+          <img src="https://github.com/kimbewi/climacast_images/blob/main/diuscutido.jpg?raw=true" class="id-photo" alt="Profile">
+          <div class="id-name">Jose Lorenzo Miguel Discutido</div>
+          <div class="id-role">Hardware Team</div>
+          <div class="id-desc">Handles component troubleshooting, soldering, and mechanical assembly of the ventilation and lighting systems.</div>
+          <div class="id-contact-wrap">
+          <div class="id-contact"><i class="ti ti-mail"></i> lorenzdiscutido@gmail.com</div>
+        </div></div>
+      </div>
+    </div>
+
+    <div class="team-section">
+      <div class="team-title"><i class="ti ti-code"></i> Software Development</div>
+      <div class="id-grid">
+        <div class="id-card">
+          <img src="https://github.com/kimbewi/climacast_images/blob/main/ISIP_2x2.jpg?raw=true" class="id-photo" alt="Profile">
+          <div class="id-name">Kimberly T. Isip</div>
+          <div class="id-role">Software Lead</div>
+          <div class="id-desc">Develops the backend data-fetching and hardware communication layers and builds the interactive dashboard for real-time sensor monitoring, actuator control, and growth stage selection.</div>
+          <div class="id-contact-wrap">
+          <div class="id-contact"><i class="ti ti-mail"></i> kimberlytisip@gmail.com</div>
+        </div></div>
+        <div class="id-card">
+          <img src="https://github.com/kimbewi/climacast_images/blob/main/LUMAWAG.jpg?raw=true" class="id-photo" alt="Profile">
+          <div class="id-name">Ella Mae D. Lumawag</div>
+          <div class="id-role">Software Lead</div>
+          <div class="id-desc">Writes the core automation logic that triggers actuators, builds the interactive climate trend graphs, and implements the system's error handling and event logging.</div>
+          <div class="id-contact-wrap">
+          <div class="id-contact"><i class="ti ti-mail"></i> wk.ellamae@gmail.com</div>
+        </div></div>
+      </div>
+    </div>
+
+    <div class="team-section">
+      <div class="team-title"><i class="ti ti-checkup-list"></i> Documentation</div>
+      <div class="id-grid">
+        <div class="id-card">
+          <img src="https://github.com/kimbewi/climacast_images/blob/main/ROXAS.PNG?raw=true" class="id-photo" alt="Profile">
+          <div class="id-name">Angeline Roxas</div>
+          <div class="id-role">Documentation Team</div>
+          <div class="id-desc">Manages system documentation.</div>
+          <div class="id-contact-wrap">
+          <div class="id-contact"><i class="ti ti-mail"></i> roxasangeline11@gmail.com</div>
+        </div></div>
+        <div class="id-card">
+          <img src="" class="id-photo" alt="Profile">
+          <div class="id-name">Margarett Kim Allauigan</div>
+          <div class="id-role">Documentation Team</div>
+          <div class="id-desc">Manages system documentation.</div>
+          <div class="id-contact-wrap">
+          <div class="id-contact"><i class="ti ti-mail"></i> mkimallauigan@gmail.com</div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+let systemMode  = "AUTO";
+let deviceModes = { fan:"AUTO", servo:"AUTO", lights:"AUTO" };
+let isInitialLoad = true;
+
+// ── ROUTER LOGIC ─────────────────────────────────────────────────────────────
+function handleRouting() {
+  let hash = window.location.hash.substring(1) || 'dashboard';
+  
+  // Hide both views
+  document.getElementById('view-dashboard').style.display = 'none';
+  document.getElementById('view-about').style.display = 'none';
+  
+  // Remove active class from both tabs
+  document.getElementById('tab-dashboard').classList.remove('active');
+  document.getElementById('tab-about').classList.remove('active');
+  
+  // Show requested view and activate tab
+  if (hash === 'about') {
+    document.getElementById('view-about').style.display = 'block';
+    document.getElementById('tab-about').classList.add('active');
+  } else {
+    document.getElementById('view-dashboard').style.display = 'block';
+    document.getElementById('tab-dashboard').classList.add('active');
+  }
+}
+window.addEventListener('hashchange', handleRouting);
+window.addEventListener('DOMContentLoaded', handleRouting);
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Time-range state (matches V2 exactly)
+let currentRange = '1H';
+let customStart  = null;
+let customEnd    = null;
+
+const climateChart = new Chart(document.getElementById('climateChart'), {
+  type: 'line',
+  data: { labels: [], datasets: [
+    { label:'Temp (°C)',      data:[], borderColor:'#e05a2b', backgroundColor:'rgba(224,90,43,0.07)',   fill:true, tension:0.4, borderWidth:2, pointRadius:2, yAxisID:'y' },
+    { label:'Humidity (%)',   data:[], borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,0.06)',   fill:true, tension:0.4, borderWidth:2, pointRadius:2, yAxisID:'y' },
+    { label:'CO2 (x10 ppm)', data:[], borderColor:'#7c3aed', backgroundColor:'rgba(124,58,237,0.05)', fill:true, tension:0.4, borderWidth:2, pointRadius:2, yAxisID:'y' }
+  ]},
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    interaction:{ mode:'index', intersect:false },
+    plugins: {
+      legend: { labels:{ color:'#6e6258', font:{size:10}, boxWidth:24, boxHeight:2 } },
+      tooltip: {
+        backgroundColor:'#fff', borderColor:'#e8e0d0', borderWidth:1,
+        titleColor:'#1a2d1e', bodyColor:'#6e6258', padding:10,
+        callbacks: { label: function(ctx) {
+          if (ctx.datasetIndex===2) return ' CO2: '+(ctx.parsed.y*10).toFixed(0)+' ppm';
+          return ' '+ctx.dataset.label.split(' ')[0]+': '+ctx.parsed.y.toFixed(1)+([' C',' %'][ctx.datasetIndex]||'');
+        }}
+      }
+    },
+    scales: {
+      x: { ticks:{color:'#b0a898',font:{size:9},maxTicksLimit:8,maxRotation:0}, grid:{color:'#f0ece4'} },
+      y: { ticks:{color:'#b0a898',font:{size:9}}, grid:{color:'#f0ece4'} }
+    }
+  }
+});
+
+// RANGE SELECTOR
+function setRange(range) {
+  currentRange = range;
+  ['1H','6H','24H','CUSTOM'].forEach(function(r) {
+    var btn = document.getElementById('btn-'+r);
+    if (btn) btn.classList.toggle('range-active', r===range);
+  });
+  var customRow = document.getElementById('custom-range-row');
+  if (range==='CUSTOM') {
+    customRow.classList.add('visible');
+  } else {
+    customRow.classList.remove('visible');
+    customStart = null;
+    customEnd   = null;
+  }
+  fetchChartHistory();
+}
+
+// CUSTOM RANGE — called when either datetime-local input changes
+function applyCustomRange() {
+  var fromVal = document.getElementById('custom-from').value;
+  var toVal   = document.getElementById('custom-to').value;
+  customStart = fromVal ? new Date(fromVal).getTime() : null;
+  customEnd   = toVal   ? new Date(toVal).getTime()   : null;
+  fetchChartHistory();
+}
+
+// DOWNSAMPLE
+function downsample(data, targetPoints) {
+  if (data.length <= targetPoints) return data;
+  var step = Math.ceil(data.length / targetPoints);
+  return data.filter(function(_, i) { return i % step === 0; });
+}
+
+// FORCE REFRESH — same mechanism as V2:
+// 1. Spin the icon for visual feedback.
+// 2. POST to /log  →  chip immediately calls logEnvironmentalData() and
+//    resets lastLogTime, bypassing the 60-second gate.  A fresh sensor
+//    snapshot is written into the ring buffer right now.
+// 3. Fetch /history to pull the updated buffer (now includes the new point).
+// 4. Re-render the chart.
+function forceRefresh() {
+  var icon = document.getElementById('refresh-icon');
+  icon.style.transition = 'transform 0.5s';
+  icon.style.transform  = 'rotate(360deg)';
+  setTimeout(function() { icon.style.transition=''; icon.style.transform=''; }, 500);
+
+  // Step 2: force the chip to log right now, then re-fetch history
+  fetch('/log')
+    .then(function() { return fetchChartHistory(); })
+    .catch(function(err) {
+      console.error("Force-log failed:", err);
+      fetchChartHistory(); // still refresh display even if /log failed
+    });
+}
+
+// FETCH & RENDER — V2 pipeline applied to on-chip ring buffer
+// 1. Fetch /history  ->  { ageSec, temp, hum, co2 }[]
+// 2. Convert ageSec -> absolute ms timestamp: time = Date.now() - (ageSec * 1000)
+// 3. Filter by rangeMs window (or customStart/customEnd for CUSTOM)
+// 4. Downsample to per-range target
+// 5. Build HH:MM labels (M/DD HH:MM for 24H / CUSTOM)
+// 6. Scale CO2 /10 for shared Y axis
+function fetchChartHistory() {
+  fetch('/history')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var emptyEl = document.getElementById('chart-empty');
+      var now     = Date.now();
+
+      // Step 1 & 2: convert relative age to absolute timestamp
+      var withTimestamps = data.map(function(pt) {
+        return { time: now-(pt.ageSec*1000), temp:pt.temp, hum:pt.hum, co2:pt.co2 };
+      });
+
+      // Step 3: filter by selected range
+      var rangeMs = { '1H':3600000, '6H':21600000, '24H':86400000 };
+      var filtered = withTimestamps.filter(function(pt) {
+        if (currentRange==='CUSTOM') {
+          return (!customStart || pt.time>=customStart) && (!customEnd || pt.time<=customEnd);
+        }
+        return pt.time >= now-(rangeMs[currentRange]||3600000);
+      });
+
+      // Step 4: downsample
+      var targetPoints = { '1H':60, '6H':72, '24H':48, 'CUSTOM':100 };
+      filtered = downsample(filtered, targetPoints[currentRange]||60);
+
+      if (!filtered || filtered.length===0) {
+        emptyEl.classList.add('visible');
+        climateChart.data.labels=[];
+        climateChart.data.datasets.forEach(function(d){d.data=[];});
+        climateChart.update(); return;
+      }
+      emptyEl.classList.remove('visible');
+
+      // Step 5: HH:MM labels; prepend M/DD for 24H/CUSTOM
+      var useDate = (currentRange==='24H' || currentRange==='CUSTOM');
+      climateChart.data.labels = filtered.map(function(pt) {
+        var dt = new Date(pt.time);
+        var hm = dt.getHours().toString().padStart(2,'0')+':'+dt.getMinutes().toString().padStart(2,'0');
+        return useDate ? (dt.getMonth()+1)+'/'+dt.getDate()+' '+hm : hm;
+      });
+
+      // Step 6: populate datasets
+      climateChart.data.datasets[0].data = filtered.map(function(pt){return pt.temp;});
+      climateChart.data.datasets[1].data = filtered.map(function(pt){return pt.hum;});
+      climateChart.data.datasets[2].data = filtered.map(function(pt){return pt.co2!==null?pt.co2/10:null;});
+      climateChart.update();
+    })
+    .catch(function(err){console.error("Chart error:",err);});
+}
+
+// GROWTH STAGE DATA
+var growthStages = {
+  // minT/maxT = target temp range, minH/maxH = target humidity range
+  // maxC = upper CO2 display threshold (warning if exceeded)
+  // co2Min = lower CO2 target (warning if below, weeks 2-5 only)
+  "1":{ minT:20, maxT:22, minH:70, maxH:80, maxC:1500, co2Min:0    }, // ambient, no CO2 control
+  "2":{ minT:18, maxT:22, minH:65, maxH:75, maxC:1000, co2Min:800  }, // target 800-1000 ppm
+  "3":{ minT:18, maxT:21, minH:60, maxH:70, maxC:1100, co2Min:900  }, // target 900-1100 ppm
+  "4":{ minT:17, maxT:20, minH:60, maxH:70, maxC:1100, co2Min:900  }, // target 900-1100 ppm
+  "5":{ minT:16, maxT:20, minH:55, maxH:65, maxC:1200, co2Min:1100 }, // target 1100-1200 ppm
+  "6":{ minT:15, maxT:18, minH:50, maxH:60, maxC:1500, co2Min:0    }  // ambient, no CO2 control
+};
+var stageInfo = {
+  "1":{name:"Germination",      badge:"Days 1-7",  badgeBg:"#e8f5ee",badgeColor:"#1a6b3a",icon:"&#127807;",accent:"#1a6b3a",iconBg:"#e8f5ee",desc:"Seeds are sprouting and roots emerge."},
+  "2":{name:"Early Seedling",         badge:"Days 8-14", badgeBg:"#e8f5ee",badgeColor:"#1a6b3a",icon:"&#127807;",accent:"#2d8a50",iconBg:"#e8f5ee",desc:"True leaves forming above cotyledons."},
+  "3":{name:"Vegetative Growth", badge:"Days 15-21",badgeBg:"#eff6ff",badgeColor:"#185fa5",icon:"&#127807;",accent:"#2563eb",iconBg:"#eff6ff",desc:"Leaf canopy expands rapidly."},
+  "4":{name:"Leaf Expansion",badge:"Days 22-28",badgeBg:"#eff6ff",badgeColor:"#185fa5",icon:"&#127807;",accent:"#2563eb",iconBg:"#eff6ff",desc:"Peak biomass accumulation phase."},
+  "5":{name:"Head Formation",      badge:"Days 29-35",badgeBg:"#faeeda",badgeColor:"#854f0b",icon:"&#127807;",accent:"#d97706",iconBg:"#faeeda",desc:"Head formation begins and leaves compact."},
+  "6":{name:"Harvest Ready",    badge:"Days 36-42",badgeBg:"#faece7",badgeColor:"#c24b1a",icon:"&#127807;",accent:"#e05a2b",iconBg:"#faece7",desc:"The lettuce is fully mature."}
+};
+
+function updateStageCard(week) {
+  var s=stageInfo[week]; if(!s) return;
+  document.getElementById('stage-info-card').style.borderLeftColor=s.accent;
+  var icon=document.getElementById('stage-info-icon'); icon.innerHTML=s.icon; icon.style.background=s.iconBg;
+  document.getElementById('stage-info-name').innerText=s.name;
+  var badge=document.getElementById('stage-info-badge'); badge.innerText=s.badge; badge.style.background=s.badgeBg; badge.style.color=s.badgeColor;
+  document.getElementById('stage-info-desc').innerText=s.desc;
+  if (!isInitialLoad) { fetch('/settings?week='+week).catch(function(e){console.error(e);}); }
+}
+
+// MAIN POLL LOOP
+setInterval(function() {
+  fetch('/data')
+    .then(function(r){return r.json();})
+    .then(function(data) {
+      document.getElementById("act-offline").classList.remove("active");
+      if (isInitialLoad) {
+        document.getElementById("lettuce-week").value=data.lettuceWeek;
+        updateStageCard(data.lettuceWeek);
+        syncUIMode(data.systemMode);
+        syncUIDeviceMode("fan",data.deviceModes.fan);
+        syncUIDeviceMode("servo",data.deviceModes.servo);
+        syncUIDeviceMode("lights",data.deviceModes.light);
+        isInitialLoad=false;
+        fetchChartHistory();
+        // Send browser's wall-clock time to ESP32 so it can drive the light schedule
+        var nowSec = Math.floor(Date.now() / 1000);
+        fetch('/settime?ts=' + nowSec).catch(function(e) { console.warn("settime failed:", e); });
+      }
+      var currentWeek=document.getElementById("lettuce-week").value;
+      var limits=growthStages[currentWeek];
+
+      if (data.temperature===null) {
+        document.getElementById("val-temp").innerText="ERR";
+        document.getElementById("status-temp").className="card-status s-bad";
+        document.getElementById("status-temp").innerText="FAULT";
+      } else {
+        document.getElementById("val-temp").innerText=data.temperature.toFixed(1);
+        var sT=document.getElementById("status-temp");
+        sT.className=(data.temperature>limits.maxT||data.temperature<limits.minT)?"card-status s-warn":"card-status s-ok";
+        sT.innerText=(data.temperature>limits.maxT||data.temperature<limits.minT)?"Warning":"Normal";
+      }
+      if (data.humidity===null) {
+        document.getElementById("val-hum").innerText="ERR";
+        document.getElementById("status-hum").className="card-status s-bad";
+        document.getElementById("status-hum").innerText="FAULT";
+      } else {
+        document.getElementById("val-hum").innerText=data.humidity.toFixed(1);
+        var sH=document.getElementById("status-hum");
+        sH.className=(data.humidity>limits.maxH||data.humidity<limits.minH)?"card-status s-warn":"card-status s-ok";
+        sH.innerText=(data.humidity>limits.maxH||data.humidity<limits.minH)?"Warning":"Normal";
+      }
+      if (data.co2===null) {
+        document.getElementById("val-co2").innerText="ERR";
+        document.getElementById("status-co2").className="card-status s-bad";
+        document.getElementById("status-co2").innerText="FAULT";
+      } else {
+        document.getElementById("val-co2").innerText=data.co2;
+        var sC=document.getElementById("status-co2");
+        var co2OutOfRange = (data.co2 > limits.maxC) || (limits.co2Min > 0 && data.co2 < limits.co2Min);
+        sC.className = co2OutOfRange ? "card-status s-warn" : "card-status s-ok";
+        sC.innerText = co2OutOfRange ? "Warning" : "Normal";
+      }
+      document.getElementById("thresh-temp").innerText="Threshold: "+limits.minT+" - "+limits.maxT+" C";
+      document.getElementById("thresh-hum").innerText ="Threshold: "+limits.minH+" - "+limits.maxH+" %";
+      document.getElementById("thresh-co2").innerText = (limits.co2Min > 0) ? "Threshold: "+limits.co2Min+" - "+limits.maxC+" ppm" : "Threshold: < "+limits.maxC+" ppm";
+
+      updateActuatorUIVisuals("fan",data.runtimeStates.fan);
+      // Sync light toggle + slider from chip when in AUTO mode
+      if (deviceModes["lights"]==="AUTO") {
+        setLightOnUI(data.runtimeStates.lightOn);
+        if (data.runtimeStates.lightOn) {
+          document.getElementById("light-slider").value = data.runtimeStates.lightSlider;
+          updateLightSliderUI(data.runtimeStates.lightSlider);
+        }
+      }
+      document.getElementById('servo-label').innerText='Position: '+data.runtimeStates.servo+'\u00b0';
+      if (systemMode==="AUTO") { document.getElementById("servo-slider").value=data.runtimeStates.servo; }
+      // Servo card green when open
+      var servoCard=document.getElementById('card-servo');
+      if (parseInt(data.runtimeStates.servo) > 0) servoCard.classList.add('actuator-active');
+      else servoCard.classList.remove('actuator-active');
+
+      var activeAlerts=[];
+      if (data.temperature>limits.maxT && data.deviceModes.fan==="AUTO")   activeAlerts.push("<strong>&#9888; Temperature High &mdash; Fan Auto-Triggered</strong> Venting heat via Exhaust Fan.");
+      if (data.co2>limits.maxC        && data.deviceModes.servo==="AUTO") activeAlerts.push("<strong>&#9888; CO&#8322; Rising &mdash; Vent Auto-Opened</strong> Air purification open.");
+
+      var banner=document.getElementById("sys-alert"),icon=document.getElementById("alert-icon"),text=document.getElementById("alert-text");
+      if (activeAlerts.length>0) {
+        text.innerHTML=activeAlerts.join('<br>');
+        banner.style.background="#fff8e6"; banner.style.borderColor="#f5c842"; banner.style.borderLeftColor="#f5c842";
+        icon.className="ti ti-alert-triangle"; icon.style.color="#d97706"; text.style.color="#92400e";
+      } else {
+        text.innerHTML="<strong>System Normal</strong> Watching environmental automation events...";
+        banner.style.background="#e8f5ee"; banner.style.borderColor="#b8ddc8"; banner.style.borderLeftColor="#1a6b3a";
+        icon.className="ti ti-check"; icon.style.color="#1a6b3a"; text.style.color="#1a2d1e";
+      }
+    })
+    .catch(function(){document.getElementById("act-offline").classList.add("active");});
+}, 2000);
+
+setInterval(fetchChartHistory, 30000);
+
+function updateActuatorUIVisuals(device,state) {
+  var pill=document.getElementById("t-fan"); // only fan still uses a toggle pill
+  var card=document.getElementById("card-"+device), sub=document.getElementById("sub-"+device);
+  if (state) { pill.classList.remove('toggle-off'); pill.classList.add('toggle-on'); card.classList.add('actuator-active'); if(sub) sub.innerText="Active"; }
+  else       { pill.classList.remove('toggle-on');  pill.classList.add('toggle-off'); card.classList.remove('actuator-active'); if(sub) sub.innerText="Inactive"; }
+}
+function toggleDevice(device,elemId,onVal,offVal) {
+  var pill=document.getElementById(elemId);
+  var targetState=pill.classList.contains('toggle-off')?1:0;
+  fetch('/control?device='+device+'&state='+targetState)
+    .then(function() { updateActuatorUIVisuals(device,targetState>0); })
+    .catch(function(e){console.error(e);});
+}
+// ── GROW LIGHT HELPERS ───────────────────────────────────────────────────────
+
+// toggleLights: flips the ON/OFF state; frozen when deviceMode is AUTO
+function toggleLights() {
+  var pill = document.getElementById("t-lights");
+  var isCurrentlyOn = pill.classList.contains('toggle-on');
+  var newState = isCurrentlyOn ? 0 : 1;
+  fetch('/control?device=lighttoggle&state=' + newState)
+    .then(function() { setLightOnUI(newState > 0); })
+    .catch(function(e) { console.error(e); });
+}
+
+// setLightOnUI: toggle pill, show/hide dot strip + slider, update icon + label
+function setLightOnUI(on) {
+  var pill       = document.getElementById("t-lights");
+  var sliderWrap = document.getElementById("light-slider-wrap");
+  var card       = document.getElementById("card-lights");
+  var label      = document.getElementById("light-label");
+  var icon       = document.getElementById("light-icon");
+  if (on) {
+    pill.classList.remove('toggle-off'); pill.classList.add('toggle-on');
+    sliderWrap.style.display = 'flex';
+    card.classList.add('actuator-active');
+    icon.style.color = '#e05a2b';
+    updateLightSliderUI(parseInt(document.getElementById("light-slider").value));
+  } else {
+    pill.classList.remove('toggle-on'); pill.classList.add('toggle-off');
+    sliderWrap.style.display = 'none';
+    card.classList.remove('actuator-active');
+    label.innerText = 'OFF';
+    icon.style.color = '#b0a898';
+  }
+}
+
+// renderLightDots: red fills LEFT (slider right), blue fills RIGHT (slider left)
+// redCount dots on the left, blueCount dots on the right
+function renderLightDots(redCount, blueCount) {
+  var container = document.getElementById('light-dots');
+  container.innerHTML = '';
+  for (var i = 0; i < redCount; i++) {
+    var d = document.createElement('div');
+    d.style.cssText = 'width:10px;height:10px;border-radius:50%;background:#e05a2b;flex-shrink:0;';
+    container.appendChild(d);
+  }
+  for (var j = 0; j < blueCount; j++) {
+    var d2 = document.createElement('div');
+    d2.style.cssText = 'width:10px;height:10px;border-radius:50%;background:#2563eb;flex-shrink:0;';
+    container.appendChild(d2);
+  }
+}
+
+// updateLightSliderUI: updates label + dot strip (slider accent stays neutral green)
+//   slider=0 → 8R / 0B (all Red)   slider=8 → 0R / 8B (all Blue)
+var _lastLightSliderVal = 0;
+function updateLightSliderUI(val) {
+  val = parseInt(val);
+  var label    = document.getElementById('light-label');
+  var slider   = document.getElementById('light-slider');
+  var redCount  = val;
+  var blueCount = 8 - val;
+  label.innerText = redCount + 'R / ' + blueCount + 'B';
+  // Direction-based: moved right → red, moved left → blue
+  if      (val > _lastLightSliderVal) slider.style.accentColor = '#e05a2b';
+  else if (val < _lastLightSliderVal) slider.style.accentColor = '#2563eb';
+  _lastLightSliderVal = val;
+  renderLightDots(redCount, blueCount);
+}
+
+// updateLights: sends slider position to chip (0=all Red, 8=all Blue)
+function updateLights(val) {
+  fetch('/control?device=lights&state='+val).catch(function(e){console.error(e);});
+}
+function updateServo(angle) {
+  var card = document.getElementById("card-servo");
+  if (parseInt(angle) > 0) card.classList.add('actuator-active');
+  else                     card.classList.remove('actuator-active');
+  fetch('/control?device=servo&state='+angle).catch(function(e){console.error(e);});
+}
+function toggleLocalMode(device) {
+  if (systemMode==="AUTO") return;
+  var targetMode=deviceModes[device]==="AUTO"?"MANUAL":"AUTO";
+  fetch('/settings?devMode='+device+'&devState='+targetMode).then(function(){syncUIDeviceMode(device,targetMode);});
+}
+function toggleMode() {
+  var t=systemMode==="AUTO"?"MANUAL":"AUTO";
+  fetch('/settings?mode='+t).then(function() {
+    syncUIMode(t);
+    ["fan","servo","lights"].forEach(function(d){syncUIDeviceMode(d,t);});
+  });
+}
+function syncUIMode(mode) {
+  systemMode=mode;
+  var pill=document.getElementById("t-mode"),modeText=document.getElementById("mode-text"),modeBadge=document.getElementById("mode-badge");
+  if (mode==="MANUAL") {
+    pill.classList.remove('toggle-off'); pill.classList.add('toggle-on'); pill.style.background="#d97706";
+    modeText.innerText="MANUAL OVERRIDE"; modeText.style.color="#d97706"; modeBadge.style.background="#fff8e6";
+  } else {
+    pill.classList.remove('toggle-on'); pill.classList.add('toggle-off'); pill.style.background="#1a6b3a";
+    modeText.innerText="AUTOMATIC"; modeText.style.color="#1a6b3a"; modeBadge.style.background="#e8f5ee";
+  }
+}
+function syncUIDeviceMode(device,mode) {
+  deviceModes[device]=mode;
+  var badge=document.getElementById("mode-"+device), ctrl=document.getElementById("ctrl-"+device);
+  if (mode==="MANUAL") {
+    badge.innerHTML='<i class="ti ti-switch-horizontal"></i> MANUAL'; badge.className="mini-badge mb-man";
+    if(ctrl){ctrl.style.opacity="1"; ctrl.style.pointerEvents="auto";}
+  } else {
+    badge.innerHTML='<i class="ti ti-switch-horizontal"></i> AUTO'; badge.className="mini-badge mb-auto";
+    if(ctrl){ctrl.style.opacity="0.5"; ctrl.style.pointerEvents="none";}
+  }
+}
+</script>
+</body></html>
